@@ -56,4 +56,4 @@ EXPOSE 55110
 
 VOLUME ["/downloads", "/torrents", "/queue"]
 
-ENTRYPOINT ["python", "run.py"]
+ENTRYPOINT ["./entrypoint.sh"]
