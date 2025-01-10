@@ -11,7 +11,27 @@
 #
 # Done
 
-FROM python:3.11-slim-buster
+FROM python:3.11-slim-buster AS base
+
+RUN apt-get update \
+    && echo "----- Installing dependencies" \
+    && apt-get install -y sox flac mp3val curl ffmpeg
+
+FROM base AS dependencies
+
+WORKDIR /salmon
+
+COPY ./requirements.txt /salmon/
+
+RUN echo "----- Installing python requirements" \
+    && apt-get update \
+    && apt-get install -y gcc \
+    && pip install --trusted-host pypi.python.org -r requirements.txt \
+    && apt-get remove -y gcc \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM dependencies AS run
 
 ARG uid=1000
 ARG gid=1000
@@ -20,12 +40,7 @@ WORKDIR /salmon
 
 COPY ./ /salmon
 
-RUN apt-get update \
-    && echo "----- Installing dependencies" \
-    && apt-get install -y gcc sox flac mp3val \
-    && echo "----- Installing python requirements" \
-    && pip install --trusted-host pypi.python.org -r requirements.txt \
-    && echo "----- Initializing salmon" \
+RUN echo "----- Initializing salmon" \
     # If `WEB_HOST` exists in config.py.txt, leave it alone. Otherwise append `WEB_HOST = '0.0.0.0'`
     && grep -q "WEB_HOST" config.py.txt || echo "\nWEB_HOST = '0.0.0.0'" >> config.py.txt \
     && cp config.py.txt config.py \
@@ -33,10 +48,7 @@ RUN apt-get update \
     && echo "----- Adding salmon user and group and chown" \
     && groupadd -r salmon -g ${gid} \
     && useradd --no-log-init -MNr -g ${gid} -u ${uid} salmon \
-    && chown salmon:salmon -R /salmon \
-    && apt-get remove -y gcc \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && chown salmon:salmon -R /salmon
 
 USER salmon:salmon
 
