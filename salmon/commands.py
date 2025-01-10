@@ -16,6 +16,7 @@ import salmon.sources
 import salmon.tagger
 import salmon.uploader
 import salmon.web  # noqa F401
+import salmon.batchupload
 from salmon import config
 from salmon.common import commandgroup
 from salmon.common import compress as recompress

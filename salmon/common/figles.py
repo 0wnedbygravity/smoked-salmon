@@ -31,6 +31,18 @@ def create_relative_path(root, path, filename):
         root.split(path, 1)[1][1:], filename
     )  # [1:] to get rid of the slash.
 
+def get_folder_name(path):
+    """
+    Extract the folder name from a given file path. For example, given:
+        path     = '/home/xxx/Tidal/Album'
+    'Album' would be returned.
+    """
+    # Get the directory portion of the path
+    directory_path = os.path.dirname(path)
+    # Get the base folder name from the directory path
+    folder_name = os.path.basename(directory_path)
+    return folder_name
+
 
 def compress(filepath):
     """Re-compress a .flac file with the configured level."""

@@ -9,7 +9,7 @@ import pyperclip
 from salmon import config
 from salmon.common import commandgroup
 from salmon.constants import ENCODINGS, FORMATS, SOURCES, TAG_ENCODINGS
-from salmon.errors import AbortAndDeleteFolder, InvalidMetadataError
+from salmon.errors import AbortAndDeleteFolder, AbortAndMarkUploaded, InvalidMetadataError
 
 import salmon.trackers
 
@@ -229,6 +229,7 @@ def upload(
     """Upload an album folder to Gazelle Site
     Offer the choice to upload to another tracker after completion."""
     path = os.path.abspath(path)
+    tracker = gazelle_site.site_code
     if not source:
         source = _prompt_source()
     audio_info = gather_audio_info(path)
@@ -282,10 +283,22 @@ def upload(
             click.echo()
         track_data = concat_track_data(tags, audio_info)
     except click.Abort:
-        return click.secho("\nAborting upload...", fg="red")
+        click.secho("\nAborting upload...", fg="red")
+        if click.confirm(
+            click.style(
+                f'\nDo you want to mark the folder as Uploaded?',
+                    fg="magenta",
+                    bold=True,
+                ), abort=True
+            ):
+            mark_path_uploaded(path, tracker.upper())
+        return
     except AbortAndDeleteFolder:
         shutil.rmtree(path)
         return click.secho("\nDeleted folder, aborting upload...", fg="red")
+    except AbortAndMarkUploaded:
+        mark_path_uploaded(path, tracker)
+        return click.secho(f"\nMarked folder as uploaded on {tracker}, aborting upload...", fg="red")
 
     lossy_comment = None
     if spectrals_after:
@@ -380,6 +393,9 @@ def upload(
             add_torrent_to_rutorrent(config.RUTORRENT_URL, torrent_path, config.TRACKER_DIRS[tracker], config.TRACKER_LABELS[tracker])
         if config.COPY_UPLOADED_URL_TO_CLIPBOARD:
             pyperclip.copy(url)
+
+        mark_path_uploaded(path, tracker)
+
         tracker = None
         request_id = None
         if not remaining_gazelle_sites or not config.MULTI_TRACKER_UPLOAD:
@@ -495,6 +511,20 @@ def metadata_validator(metadata):
 def convert_genres(genres):
     """Convert the weirdly spaced genres to RED-compliant genres."""
     return ",".join(re.sub("[-_ ]", ".", g).strip() for g in genres)
+
+def mark_path_uploaded(path, tracker_name):
+    """
+    Create a ".EXISTS-TRACKER" file in the specified directory path.
+    """  
+    # Construct the tracker file path
+    tracker_file_path = os.path.join(path, f".EXISTS-{tracker_name.upper()}")
+
+    if os.path.exists(tracker_file_path):
+        click.secho(f"\nTracker file already exists!\n  {tracker_file_path}")
+    # Create the tracker file
+    open(tracker_file_path, "a").close()
+    
+    click.secho(f"\nTracker file created:\n   {tracker_file_path}")
 
 
 def _prompt_source():
