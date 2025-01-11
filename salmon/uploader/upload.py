@@ -212,6 +212,16 @@ def generate_torrent(gazelle_site, path):
         source=gazelle_site.site_string,
     )
     t.generate()
+
+    tdpath = os.path.join(
+        gazelle_site.torrents_data_dir,
+        os.path.basename(path)
+    )
+
+    # Avoid error if multiple trackers have the same path
+    if not os.path.exists(tdpath):
+        shutil.copytree(path, tdpath, copy_function=os.link)
+
     tpath = os.path.join(
         #tempfile.gettempdir(),
         gazelle_site.dot_torrents_dir,

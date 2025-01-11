@@ -61,9 +61,14 @@ class BaseGazelleApi:
         }
         if self.api_key:
             self.headers.update({"Authorization": self.api_key})
-        self.dot_torrents_dir = config.DOTTORRENTS_DIR
         self.session = requests.Session()
         self.session.headers.update(self.headers)
+
+        if not self.dot_torrents_dir:
+            self.dot_torrents_dir = config.DOTTORRENTS_DIR
+
+        if not self.torrents_data_dir:
+            self.torrents_data_dir = config.TORRENTSDATA_DIR
 
         self.authkey = None
         self.passkey = None

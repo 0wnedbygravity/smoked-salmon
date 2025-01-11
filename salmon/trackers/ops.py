@@ -16,11 +16,10 @@ class OpsApi(BaseGazelleApi):
         self.base_url = 'https://orpheus.network'
         self.tracker_url = 'https://home.opsfet.ch'
         self.site_string = 'OPS'
-        if config.OPS_DOTTORRENTS_DIR:
-            self.dot_torrents_dir = config.OPS_DOTTORRENTS_DIR
-        else:
-            self.dot_torrents_dir = config.DOTTORRENTS_DIR
 
+        self.dot_torrents_dir = config.OPS_DOTTORRENTS_DIR
+        self.torrents_data_dir = config.OPS_TORRENTSDATA_DIR
+        
         self.cookie = config.OPS_SESSION
         if config.OPS_API_KEY:
             self.api_key = config.OPS_API_KEY
