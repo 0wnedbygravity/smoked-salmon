@@ -7,9 +7,6 @@ class ScrapeError(Exception):
 class AbortAndDeleteFolder(Exception):
     pass
 
-class AbortAndMarkUploaded(Exception):
-    pass
-
 class DownloadError(Exception):
     pass
 

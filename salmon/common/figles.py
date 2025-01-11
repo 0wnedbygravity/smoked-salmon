@@ -1,6 +1,8 @@
 import os
 import subprocess
 
+import click
+
 from salmon import config
 
 
@@ -80,3 +82,56 @@ def alac_to_flac(filepath):
             stderr=devnull,
         )
     os.rename(f"{filepath}.flac", filepath)
+
+def promt_path_processed(path, tracker_name):
+
+    if check_path_processed(path, tracker_name):
+        return
+    
+    if not click.confirm(
+        click.style(
+            f'\nDo you want to mark the folder as Processed for {tracker_name}?',
+                fg="magenta",
+                bold=True,
+            ),
+            default=True
+        ):
+        return
+
+    mark_path_processed(path, tracker_name)
+
+    return
+
+def get_processed_filename(path, tracker_name):
+    """
+    Returns filename to mark path as processed.
+    """
+    return os.path.join(path, f".PROCESSED-{tracker_name.upper()}")
+
+def check_path_processed(path, tracker_name):
+    """
+    Checks whenever a path contains a ".PROCESSED-TRACKER" file.
+    """
+    # Construct the tracker file path
+    tracker_file_path = get_processed_filename(path, tracker_name)
+
+    if os.path.exists(tracker_file_path):
+        return True
+    
+    return False
+
+def mark_path_processed(path, tracker_name):
+    """
+    Create a ".PROCESSED-TRACKER" file in the specified directory path.
+    """  
+    # Construct the tracker file path
+    tracker_file_path = get_processed_filename(path, tracker_name)
+
+    if check_path_processed(path, tracker_name):
+        click.secho(f"\nTracker file already exists!", color="red")
+        click.secho(f"  {tracker_name}")
+
+    # Create the tracker file
+    open(tracker_file_path, "a").close()
+    
+    click.secho(f"\nThe folder {os.path.basename(path)} has been marked as processed for {tracker_name}", color="green")

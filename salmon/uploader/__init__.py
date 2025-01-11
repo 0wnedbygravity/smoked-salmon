@@ -8,8 +8,9 @@ import pyperclip
 
 from salmon import config
 from salmon.common import commandgroup
+from salmon.common.figles import mark_path_processed, promt_path_processed
 from salmon.constants import ENCODINGS, FORMATS, SOURCES, TAG_ENCODINGS
-from salmon.errors import AbortAndDeleteFolder, AbortAndMarkUploaded, InvalidMetadataError
+from salmon.errors import AbortAndDeleteFolder, InvalidMetadataError
 
 import salmon.trackers
 
@@ -284,21 +285,11 @@ def upload(
         track_data = concat_track_data(tags, audio_info)
     except click.Abort:
         click.secho("\nAborting upload...", fg="red")
-        if click.confirm(
-            click.style(
-                f'\nDo you want to mark the folder as Uploaded?',
-                    fg="magenta",
-                    bold=True,
-                ), abort=True
-            ):
-            mark_path_uploaded(path, tracker.upper())
+        promt_path_processed(path, tracker)
         return
     except AbortAndDeleteFolder:
         shutil.rmtree(path)
         return click.secho("\nDeleted folder, aborting upload...", fg="red")
-    except AbortAndMarkUploaded:
-        mark_path_uploaded(path, tracker)
-        return click.secho(f"\nMarked folder as uploaded on {tracker}, aborting upload...", fg="red")
 
     lossy_comment = None
     if spectrals_after:
@@ -394,7 +385,7 @@ def upload(
         if config.COPY_UPLOADED_URL_TO_CLIPBOARD:
             pyperclip.copy(url)
 
-        mark_path_uploaded(path, tracker)
+        mark_path_processed(path, tracker)
 
         tracker = None
         request_id = None
@@ -511,20 +502,6 @@ def metadata_validator(metadata):
 def convert_genres(genres):
     """Convert the weirdly spaced genres to RED-compliant genres."""
     return ",".join(re.sub("[-_ ]", ".", g).strip() for g in genres)
-
-def mark_path_uploaded(path, tracker_name):
-    """
-    Create a ".EXISTS-TRACKER" file in the specified directory path.
-    """  
-    # Construct the tracker file path
-    tracker_file_path = os.path.join(path, f".EXISTS-{tracker_name.upper()}")
-
-    if os.path.exists(tracker_file_path):
-        click.secho(f"\nTracker file already exists!\n  {tracker_file_path}")
-    # Create the tracker file
-    open(tracker_file_path, "a").close()
-    
-    click.secho(f"\nTracker file created:\n   {tracker_file_path}")
 
 
 def _prompt_source():

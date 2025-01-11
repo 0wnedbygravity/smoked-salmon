@@ -7,7 +7,7 @@ import click
 
 from salmon import config
 from salmon.common import RE_FEAT, make_searchstrs
-from salmon.errors import AbortAndDeleteFolder, AbortAndMarkUploaded, RequestError
+from salmon.errors import AbortAndDeleteFolder, RequestError
 
 loop = asyncio.get_event_loop()
 
@@ -179,7 +179,7 @@ def _prompt_for_group_id(gazelle_site, results, offer_deletion):
             click.style(
                 "\nWould you like to upload to an existing group?\n"
                 f"Paste a URL{', pick from groups found 'if results is not None else ''}"
-                f'or [N]ew group / [M]ark uploaded and abort / [a]bort {"/ [d]elete folder " if offer_deletion else ""}',
+                f'or [N]ew group / [a]bort {"/ [d]elete folder " if offer_deletion else ""}',
                 fg="magenta",
                 bold=True,
             ),
@@ -206,8 +206,6 @@ def _prompt_for_group_id(gazelle_site, results, offer_deletion):
             raise click.Abort
         elif group_id.lower().startswith("d") and offer_deletion:
             raise AbortAndDeleteFolder
-        elif group_id.lower().startswith("m"):
-            raise AbortAndMarkUploaded
         elif group_id.lower().startswith("n") or not group_id.strip():
             click.echo("Uploading to a new torrent group.")
             return None

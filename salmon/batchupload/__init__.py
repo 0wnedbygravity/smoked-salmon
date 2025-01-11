@@ -5,7 +5,7 @@ import click
 
 from salmon import config
 from salmon.common import commandgroup
-from salmon.common.figles import get_audio_files
+from salmon.common.figles import check_path_processed, promt_path_processed
 from salmon.constants import SOURCES, TAG_ENCODINGS
 
 import salmon.trackers
@@ -14,7 +14,7 @@ from salmon.tagger import (
     validate_encoding,
 )
 
-from salmon.uploader import mark_path_uploaded, upload
+from salmon.uploader import upload
 
 from salmon.uploader.preassumptions import print_preassumptions
 
@@ -120,28 +120,20 @@ def batchup(
     source_url,
     yyy
 ):
-    """Command to upload multiple folders."""
+    """Command scan folder and find uploadable subfolders based on their content."""
 
     if yyy:
         config.YES_ALL = True
 
     gazelle_site = salmon.trackers.get_class(tracker)()
-
-    tracker_file = f'.EXISTS-{tracker.upper()}'
     
-    for root, files in walk_no_subdirs(path):
-
-        if not has_audio_files(files):
-            continue
+    for folder in find_uploadable_folder(path, tracker):
         
-        if tracker_file in files:
-            continue
-        
-        root = os.path.abspath(root)
+        folder = os.path.abspath(folder)
 
         try: 
             upload_folder(
-                root,
+                folder,
                 group_id,
                 lossy,
                 spectrals,
@@ -158,21 +150,15 @@ def batchup(
                 source_url,
             )
         except click.Abort:
-            if click.confirm(
-                    click.style(
-                        f'\nDo you want to mark the folder as Uploaded?',
-                        fg="magenta",
-                        bold=True,
-                    ), abort=True
-                ):
-                mark_path_uploaded(path, tracker.upper())
+            promt_path_processed(folder, tracker)
         
         click.confirm(
             click.style(
-                f'\nDo you want to find the next item to upload?',
+                '\nDo you want to find the next item to upload?',
                 fg="magenta",
                 bold=True,
-            ), abort=True
+            ), abort=True,
+            default=True
         )
 
         
@@ -196,6 +182,7 @@ def upload_folder(
     rutorrent,
     source_url,
 ):
+    """Upload a folder. Starts by showing the content and let the user chose the source"""
     source = choose_source(SOURCES.values(), path)
     print_preassumptions(
         gazelle_site,
@@ -228,20 +215,33 @@ def upload_folder(
         skip_up=skip_up,
     )
 
-def walk_no_subdirs(path):
+def find_uploadable_folder(path, tracker_name):
     """
     A generator function similar to os.walk, but it does not scan subdirectories.
     """
 
     with os.scandir(path) as it:
         files = []
+        dirs = []
+
+        if check_path_processed(path, tracker_name):
+            return
+
         for entry in it:
             if entry.is_dir():
-               yield from walk_no_subdirs(entry)             
+                  dirs.append(entry.path)
             elif entry.is_file():
                 files.append(entry.name)
 
-        yield path, files
+        dirs.sort()
+
+        for dir in dirs:
+            yield from find_uploadable_folder(dir, tracker_name)
+
+        if not has_audio_files(files):
+            return
+
+        yield path
         
 def has_audio_files(files):
     """
@@ -252,12 +252,40 @@ def has_audio_files(files):
             return True
     
     return False
-                
-   
+
+def list_folder_content(path):
+    """
+    Prints the files and subfolders found within a path.
+    """
+    with os.scandir(path) as it:
+        files = []
+        dirs = []
+
+        for entry in it:
+            if entry.is_dir():
+                dirs.append(entry.name)    
+            elif entry.is_file():
+                files.append(entry.name)
+        files.sort()
+        dirs.sort()
+
+        if len(files) > 0:
+            click.secho("\nThe following files where found in the folder:", fg="yellow")
+            for file in files:
+                click.secho(f"  {file}")
+
+        if len(dirs) > 0:
+            click.secho("\nThe following sub-folders where found in the folder:", fg="yellow")
+            for dir in dirs:
+                click.secho(f"  {dir}")
+
 def choose_source(choices, path):
     """Allows the user to choose a tracker from choices."""
     while True:
-        click.secho(f"Select source for folder:\n  {path}", fg="green")
+        click.secho("Currently selected folder:", fg="yellow")
+        click.secho(f"  {path}")
+
+        list_folder_content(path)
 
         # Loop until we have chosen a tracker or aborted.
         source_input = click.prompt(
