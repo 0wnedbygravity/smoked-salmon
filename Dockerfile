@@ -15,7 +15,7 @@ FROM python:3.11-slim-buster AS base
 
 RUN apt-get update \
     && echo "----- Installing dependencies" \
-    && apt-get install -y sox flac mp3val curl ffmpeg
+    && apt-get install -y sox flac mp3val curl ffmpeg nano
 
 FROM base AS dependencies
 
