@@ -238,6 +238,7 @@ def upload(
     standardize_tags(path)
     tags = gather_tags(path)
     rls_data = construct_rls_data(
+        path,
         tags,
         audio_info,
         source,
@@ -265,7 +266,7 @@ def upload(
                 rls_data["artists"], rls_data["title"], rls_data["catno"]
             )
             if len(searchstrs) > 0:
-                group_id = check_existing_group(gazelle_site, searchstrs)
+                group_id = check_existing_group(gazelle_site, searchstrs, rls_data["catno"])
 
         if spectrals_after:
             lossy_master = False
@@ -338,7 +339,7 @@ def upload(
             searchstrs = generate_dupe_check_searchstrs(
                 rls_data["artists"], rls_data["title"], rls_data["catno"]
             )
-            group_id = check_existing_group(gazelle_site, searchstrs, metadata)
+            group_id = check_existing_group(gazelle_site, searchstrs, rls_data["catno"], False)
 
         remaining_gazelle_sites.remove(tracker)
         if not request_id and config.CHECK_REQUESTS:

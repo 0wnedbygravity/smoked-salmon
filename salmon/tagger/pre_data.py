@@ -33,6 +33,7 @@ EMPTY_METADATA = {
 
 
 def construct_rls_data(
+    path,
     tags,
     audio_info,
     source,
@@ -71,6 +72,26 @@ def construct_rls_data(
     metadata["encoding"], metadata["encoding_vbr"] = parse_encoding(
         metadata["format"], audio_track, encoding, prompt_encoding
     )
+    if metadata["catno"] is None:
+        dirname = os.path.basename(path)
+        #Must contain letters and numbers
+        match = re.search(r'\{(?=.*[A-Za-z])(?=.*\d)([^}]+)\}', dirname)
+        if not match:
+            return metadata
+        match = match.group(1)
+        res = click.prompt(click.style(
+                f"Found the following catalog number in the file name {match} \nIs the catalog number correct? [Y]es / [N]o / write the cataloge number",
+                fg="magenta",
+                bold=True,
+            ),
+            default="y",
+            type=click.STRING)
+        if res.lower() == "y" or res.lower() == "yes":
+            metadata["catno"] = match
+        elif res.lower == "n" or res.lower() == "now":
+            return metadata
+        elif len(res) > 0:
+            metadata["catno"] = match
     return metadata
 
 

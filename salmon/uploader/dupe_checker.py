@@ -60,13 +60,13 @@ def print_recent_upload_results(gazelle_site, recent_uploads, searchstr):
             )
 
 
-def check_existing_group(gazelle_site, searchstrs, offer_deletion=True):
+def check_existing_group(gazelle_site, searchstrs, catno=None, offer_deletion=True):
     """
     Make a request to the API with a dupe-check searchstr,
     then have the user validate that the torrent does not match
     anything on site.
     """
-    results = get_search_results(gazelle_site, searchstrs)
+    results = get_search_results(gazelle_site, searchstrs, catno)
     if not results and config.CHECK_RECENT_UPLOADS:
         recent_uploads = dupe_check_recent_torrents(gazelle_site, searchstrs)
         print_recent_upload_results(
@@ -83,11 +83,13 @@ def check_existing_group(gazelle_site, searchstrs, offer_deletion=True):
     return group_id
 
 
-def get_search_results(gazelle_site, searchstrs):
+def get_search_results(gazelle_site, searchstrs, catno):
     results = []
     tasks = [
         gazelle_site.request("browse", searchstr=searchstr) for searchstr in searchstrs
     ]
+    if catno is not None:
+        tasks.append(gazelle_site.request("browse", remastercataloguenumber=catno))
     for releases in loop.run_until_complete(asyncio.gather(*tasks)):
         for release in releases['results']:
             if release not in results:
