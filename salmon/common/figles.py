@@ -128,10 +128,13 @@ def mark_path_processed(path, tracker_name):
     tracker_file_path = get_processed_filename(path, tracker_name)
 
     if check_path_processed(path, tracker_name):
-        click.secho(f"\nTracker file already exists!", color="red")
+        click.secho(f"\nTracker file already exists!", fg="red")
         click.secho(f"  {tracker_name}")
 
     # Create the tracker file
     open(tracker_file_path, "a").close()
     
-    click.secho(f"\nThe folder {os.path.basename(path)} has been marked as processed for {tracker_name}", color="green")
+    if not check_path_processed(path, tracker_name):
+        click.secho(f"\nThe folder {os.path.basename(path)} could not be marked as processed for {tracker_name}!", fg="red")
+
+    click.secho(f"\nThe folder {os.path.basename(path)} has been marked as processed for {tracker_name}", fg="green")
